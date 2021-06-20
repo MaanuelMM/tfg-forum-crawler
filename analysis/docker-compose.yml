@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  neo4j-solo:
+    image: neo4j:4.2.6-enterprise
+    hostname: xenforo-crawler
+    restart: unless-stopped
+    environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_dbms_default__database=t1621448630
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+      - NEO4J_dbms_security_procedures_whitelist=gds.*, apoc.*
+      - NEO4J_dbms_security_procedures_unrestricted=gds.*, apoc.*
+      - NEO4JLABS_PLUGINS=["graph-data-science", "apoc"]
+      - NEO4J_AUTH=neo4j/jcVQRGWM7CJdRv8dQf # user and password
+    volumes:
+      - ../crawler/.docker/neo4j/data:/data
+    ports:
+      - 7474:7474 # neo4j dashboard (localhost:7474 on web browser)
+      - 7687:7687 # neo4j bolt driver (select bolt driver and localhost:7687 on dashboard)

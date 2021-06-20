@@ -1,0 +1,95 @@
+version: "3.8"
+
+services:
+  vpn:
+    build: ./nordvpn
+    hostname: xenforo-crawler
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.conf.all.rp_filter=2
+    devices:
+      - /dev/net/tun
+    environment:
+      - "USER=example@mail.com"
+      - "PASS=supersecretpassword"
+      - "CONNECT=Spain"
+      - "TECHNOLOGY=NordLynx"
+    volumes:
+      - ./.docker/:/mnt/.docker/ # to be able to delete .docker folder on systems w/o root privileges  
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 7474:7474 # neo4j dashboard
+      - 7687:7687 # neo4j bolt driver
+      - 5672:5672 # rabbitmq amqp port
+      - 15672:15672 # rabbitmq dashboard
+
+  neo4j:
+    image: neo4j:4.2.6-enterprise
+    restart: unless-stopped
+    environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_AUTH=neo4j/jcVQRGWM7CJdRv8dQf
+    volumes:
+      - ./.docker/neo4j/data:/data
+    network_mode: service:vpn
+
+  rabbitmq:
+    image: rabbitmq:3.8.16-management-alpine
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_DEFAULT_USER=amqp
+      - RABBITMQ_DEFAULT_PASS=8T4HkhWU7lhWgfjMbA
+    volumes:
+      # - ./.docker/rabbitmq/etc/:/etc/rabbitmq/ # this can cause permission issues, and only used for config, so don't care
+      - ./.docker/rabbitmq/data/:/var/lib/rabbitmq/
+      - ./.docker/rabbitmq/logs/:/var/log/rabbitmq/
+    network_mode: service:vpn
+
+  redis:
+    image: redis:6.2.3-alpine
+    restart: unless-stopped
+    volumes:
+      - ./.docker/redis/data:/data
+    network_mode: service:vpn
+    command: ["redis-server", "--appendonly", "yes"]
+
+  worker:
+    build: ./worker
+    restart: unless-stopped
+    deploy:
+      replicas: 12
+    depends_on:
+      - rabbitmq
+      - neo4j
+    environment:
+      - "AMQP_URL=amqp://amqp:8T4HkhWU7lhWgfjMbA@localhost:5672/%2F"
+      - "DB_URL=bolt://localhost:7687"
+      - "DB_USR=neo4j"
+      - "DB_PWD=jcVQRGWM7CJdRv8dQf"
+      - "NUM_RETRIES=5"
+      - "BASE_URL=https://forum.example.com"
+    network_mode: service:vpn
+     
+  master:
+    build: ./master
+    restart: unless-stopped
+    depends_on:
+      - rabbitmq
+      - redis
+      - neo4j
+      - worker
+    environment:
+      - "AMQP_URL=amqp://amqp:8T4HkhWU7lhWgfjMbA@localhost:5672/%2F"
+      - "DB_URL=bolt://localhost:7687"
+      - "DB_USR=neo4j"
+      - "DB_PWD=jcVQRGWM7CJdRv8dQf"
+      - "TIME_RUNNING=21600"
+      - "TIME_IDLEING=21600"
+      # - "PREFETCH_COUNT=100"
+    network_mode: service:vpn

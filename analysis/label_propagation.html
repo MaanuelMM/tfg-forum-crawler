@@ -1,0 +1,42 @@
+<html>
+    <head>
+        <title>Label Propagation</title>
+        <style type="text/css">
+            #propagation {
+                width: 500px;
+                height: 500px;
+            }
+        </style>
+        <script src="https://cdn.neo4jlabs.com/neovis.js/v1.6.0/neovis.js"></script>
+    </head>   
+    <script>
+        function draw() {
+            var config = {
+                container_id: "propagation",
+                server_url: "bolt://localhost:7687",
+                server_user: "neo4j",
+                server_password: "jcVQRGWM7CJdRv8dQf",
+                // server_database: "",
+                labels: {
+                    "Member": {
+                        caption: "empty", // "empty"
+                        community: "label_propagation"
+                    }
+                },
+                relationships: {
+                    "INTERACTS_WITH": {
+                        caption: false,
+                        thickness: "weight"
+                    }
+                },
+                initial_cypher: "MATCH p=(m1:Member)-[:INTERACTS_WITH]->(m2:Member) RETURN p LIMIT 25000"
+            }
+
+            var propagation = new NeoVis.default(config);
+            propagation.render();
+        }
+    </script>
+    <body onload="draw()">
+        <div id="propagation"></div>
+    </body>
+</html>

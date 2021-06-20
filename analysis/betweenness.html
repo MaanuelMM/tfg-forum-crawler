@@ -1,0 +1,42 @@
+<html>
+    <head>
+        <title>Betweenness</title>
+        <style type="text/css">
+            #betweenness {
+                width: 500px;
+                height: 500px;
+            }
+        </style>
+        <script src="https://cdn.neo4jlabs.com/neovis.js/v1.6.0/neovis.js"></script>
+    </head>   
+    <script>
+        function draw() {
+            var config = {
+                container_id: "betweenness",
+                server_url: "bolt://localhost:7687",
+                server_user: "neo4j",
+                server_password: "jcVQRGWM7CJdRv8dQf",
+                // server_database: "",
+                labels: {
+                    "Member": {
+                        caption: "empty", // "empty"
+                        size: "betweenness"
+                    }
+                },
+                relationships: {
+                    "INTERACTS_WITH": {
+                        caption: false,
+                        thickness: "weight"
+                    }
+                },
+                initial_cypher: "MATCH p=(m1:Member)-[:INTERACTS_WITH]->(m2:Member) RETURN p ORDER BY m2.betweenness DESC, m1.betweenness DESC LIMIT 1500"
+            }
+
+            var betweenness = new NeoVis.default(config);
+            betweenness.render();
+        }
+    </script>
+    <body onload="draw()">
+        <div id="betweenness"></div>
+    </body>
+</html>
